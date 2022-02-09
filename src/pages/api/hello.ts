@@ -6,5 +6,5 @@ type Data = {
 }
 
 export default (req: NextApiRequest, res: NextApiResponse<Data>) => {
-  res.status(200).json({ name: 'John Doe' })
+  res.status(200).json({name: process.env['AUTH0_ISSUER_BASE_URL'] || 'secret'})
 }
