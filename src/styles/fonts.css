@@ -1,0 +1,19 @@
+@font-face {
+    font-family: "Butler";
+    src: url("/static/fonts/Butler-Light.woff2") format("woff2"),
+    url("/static/fonts/Butler-Light.woff") format("woff");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Natrix Sans";
+    src: url("/static/fonts/natrixsans-regular.woff2") format("woff2"),
+    url("/static/fonts/natrixsans-regular.woff2") format("woff");
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap;
+}
+
+
