@@ -8,6 +8,7 @@ import {Grommet, ThemeType} from "grommet";
 import {animated, Transition, useSpring, useTransition} from 'react-spring';
 import {useRouter} from "next/router";
 import TextButton from "../components/TextButton";
+import {UserProvider} from "@auth0/nextjs-auth0";
 
 const grommet: ThemeType = {
     global: {
@@ -96,17 +97,19 @@ function MyApp({Component, pageProps, router}: AppProps) {
 
     return <>
         <GlobalStateProvider>
-            <Grommet theme={grommet}>
-                <title>hat - homework assignment tracker</title>
-                <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
-                            onClick={() => {
-                                if (router.pathname !== "/")
-                                    router.push("/")
-                            }}/>
-                <animated.div style={fade}>
-                    <Component {...pageProps} />
-                </animated.div>
-            </Grommet>
+            <UserProvider>
+                <Grommet theme={grommet}>
+                    <title>hat - homework assignment tracker</title>
+                    <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
+                                onClick={() => {
+                                    if (router.pathname !== "/")
+                                        router.push("/")
+                                }}/>
+                    <animated.div style={fade}>
+                        <Component {...pageProps} />
+                    </animated.div>
+                </Grommet>
+            </UserProvider>
         </GlobalStateProvider>
 
     </>
