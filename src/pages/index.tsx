@@ -45,8 +45,8 @@ export default function Index() {
                 </AnimatedBox>
             </div>
             <animated.div className={"center"} style={{marginTop: "2rem", ...loginButtonAnim}}>
-                <TextButton style={{float: "left", marginRight: "2rem"}} text={"Sign Up"} onClick={() => router.push("/signup")}/>
-                <TextButton style={{float: "right", marginLeft: "2rem"}} text={"Log In"} onClick={() => router.push("/login")}/>
+                <TextButton style={{float: "left", marginRight: "2rem"}} text={"Sign Up"} onClick={() => window.location.pathname='/api/auth/login'}/>
+                <TextButton style={{float: "right", marginLeft: "2rem"}} text={"Log In"} onClick={() => window.location.pathname='/api/auth/login'}/>
             </animated.div>
         </>
     )
