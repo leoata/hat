@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+
+    <defs>
+        <font-face>
+            <font-face-src>
+                <font-face-uri href="https://hat.leoata.com/static/fonts/Butler-Light.svg"/>
+            </font-face-src>
+        </font-face>
+    </defs>
+
+    <text x="0" y="140" font-family="DejaVu Sans" font-size="200" font-weight="300" fill="#FC7A5B">
+        h
+    </text>
+</svg>
