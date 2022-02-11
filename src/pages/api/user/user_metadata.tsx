@@ -15,8 +15,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         "https://hat.leoata.com/api/auth/me",
         {headers: {Cookie: cookies},
     }).then(s=>{
-        console.log('s: ' + s)
-
         if (s.status !== 200) {
             res.statusCode = 403;
             res.end();
@@ -24,12 +22,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         }
         return s.json()
     }).then(s=>s.sub);
-    console.log(id);
 
     var auth0 = new Management({
         domain: process.env.AUTH0_BASE_URL as string,
         clientId: process.env.AUTH0_CLIENT_ID,
         clientSecret: process.env.AUTH0_CLIENT_SECRET,
+        token: cookies.split(";").find(s=>s.startsWith("appSession="))?.split("=")[1],
         scope: "read:users update:users",
     });
 
