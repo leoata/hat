@@ -11,9 +11,9 @@ export function getBaseUrl(): string {
 }
 
 export function getEnv(): ServerEnvironment {
-    if (process.env.VERCEL_URL)
-        return 'vercel';
     if (process.env.NODE_ENV === 'production')
         return 'production';
+    if (process.env.VERCEL_URL)
+        return 'vercel';
     return 'localhost';
 }
