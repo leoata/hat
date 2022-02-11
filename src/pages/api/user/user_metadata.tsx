@@ -22,7 +22,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         }
         return s.json()
     }).then(s=>s.sub);
-
+    console.log("cookies: " + cookies + ", id: " + id);
     var auth0 = new Management({
         domain: process.env.AUTH0_BASE_URL as string,
         clientId: process.env.AUTH0_CLIENT_ID,
