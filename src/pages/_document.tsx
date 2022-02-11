@@ -6,6 +6,7 @@ class MyDocument extends Document {
             <Html>
                 <Head>
                     <meta name="description" content="hat homework app by leonardo atalla"/>
+                    <link rel="icon" href="/hat.svg" type="image/svg+xml"/>
                 </Head>
                 <body>
                     <Main/>

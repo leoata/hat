@@ -8,7 +8,7 @@ import {Grommet, ThemeType} from "grommet";
 import {animated, Transition, useSpring, useTransition} from 'react-spring';
 import {useRouter} from "next/router";
 import TextButton from "../components/TextButton";
-import {UserProvider} from "@auth0/nextjs-auth0";
+import {UserProvider, useUser} from "@auth0/nextjs-auth0";
 
 const grommet: ThemeType = {
     global: {
@@ -72,8 +72,19 @@ const grommet: ThemeType = {
     }
 };
 
-function MyApp({Component, pageProps, router}: AppProps) {
+function protectedUrl(pathname: string): boolean {
+    return pathname.startsWith("/user")
 
+}
+
+function AppContent({Component, pageProps, router}: AppProps) {
+    const {user, error, isLoading} = useUser();
+    if (isLoading) return <div>Loading...</div>;
+    if (error) return <div>{error.message}</div>;
+    if (!user && protectedUrl(router.pathname)) {
+        router.push('/api/auth/login');
+        return null;
+    }
     const [fade, fadeApi] = useSpring(() => ({
         from: {opacity: 0},
         to: {opacity: 1},
@@ -82,10 +93,8 @@ function MyApp({Component, pageProps, router}: AppProps) {
 
     useEffect(() => {
         const routeChangeComplete = (url: any, {shallow}: any) => {
-            console.log(url)
             fadeApi({reset: true})
             fadeApi({opacity: 1});
-
         };
 
         router.events.on('routeChangeComplete', routeChangeComplete);
@@ -94,20 +103,26 @@ function MyApp({Component, pageProps, router}: AppProps) {
             router.events.off('routeChangeComplete', routeChangeComplete);
         }
     }, [])
+    return <>
+        <title>hat - homework assignment tracker</title>
+        <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
+                    onClick={() => {
+                        if (router.pathname !== "/")
+                            router.push("/")
+                    }}/>
+        <animated.div style={fade}>
+            <Component {...pageProps} />
+        </animated.div>
+    </>
+}
+
+function MyApp({Component, pageProps, router}: AppProps) {
 
     return <>
         <GlobalStateProvider>
             <UserProvider>
                 <Grommet theme={grommet}>
-                    <title>hat - homework assignment tracker</title>
-                    <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
-                                onClick={() => {
-                                    if (router.pathname !== "/")
-                                        router.push("/")
-                                }}/>
-                    <animated.div style={fade}>
-                        <Component {...pageProps} />
-                    </animated.div>
+                    <AppContent pageProps={pageProps} Component={Component} router={router}/>
                 </Grommet>
             </UserProvider>
         </GlobalStateProvider>
