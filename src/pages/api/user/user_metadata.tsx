@@ -2,6 +2,7 @@ import {IncomingMessage, ServerResponse} from "http";
 import {useUser} from "@auth0/nextjs-auth0";
 import {Management} from "auth0-js";
 
+const fetcher = (url: RequestInfo) => fetch(url).then((res) => res.json())
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
     let cookies = req.headers.cookie;
@@ -10,18 +11,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         res.end();
         return;
     }
-
-    const id = await fetch(
-        "https://hat.leoata.com/api/auth/me",
-        {headers: {Cookie: cookies},
-    }).then(s=>{
-        if (s.status !== 200) {
-            res.statusCode = 403;
-            res.end();
-            return;
+    const data = await fetch(process.env.NODE_ENV == 'production' ?
+        'https://hat.leoata.com/api/auth/me' : 'http://localhost:3000/api/auth/me', {
+        headers: {
+            Cookie: cookies
         }
-        return s.json()
-    }).then(s=>s.sub);
+    });
+    const user = await data.json();
+
+
+    console.log(user)
+    const id = user.sub;
+
     console.log("cookies: " + cookies + ", id: " + id);
     var auth0 = new Management({
         domain: process.env.AUTH0_BASE_URL as string,
