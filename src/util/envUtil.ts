@@ -5,7 +5,7 @@ export function getBaseUrl(): string {
     if (env === 'production')
         return 'https://hat.leoata.com';
     else if (env === 'vercel')
-        return process.env.VERCEL_URL as string;
+        return "https://" + process.env.VERCEL_URL as string;
     else
         return 'http://localhost:3000';
 }
