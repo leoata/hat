@@ -8,7 +8,9 @@ import {Grommet, ThemeType} from "grommet";
 import {animated, Transition, useSpring, useTransition} from 'react-spring';
 import {useRouter} from "next/router";
 import TextButton from "../components/TextButton";
-import {UserProvider, useUser} from "@auth0/nextjs-auth0";
+import {SessionProvider, signIn, useSession} from "next-auth/react"
+import {useForceUpdate} from "@react-spring/shared";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 const grommet: ThemeType = {
     global: {
@@ -74,17 +76,9 @@ const grommet: ThemeType = {
 
 function protectedUrl(pathname: string): boolean {
     return pathname.startsWith("/user")
-
 }
 
-function AppContent({Component, pageProps, router}: AppProps) {
-    const {user, error, isLoading} = useUser();
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>{error.message}</div>;
-    if (!user && protectedUrl(router.pathname)) {
-        router.push('/api/auth/login');
-        return null;
-    }
+function AppContent({appProps: {Component, pageProps, router}, session}: { appProps: AppProps, session: any }) {
     const [fade, fadeApi] = useSpring(() => ({
         from: {opacity: 0},
         to: {opacity: 1},
@@ -103,6 +97,9 @@ function AppContent({Component, pageProps, router}: AppProps) {
             router.events.off('routeChangeComplete', routeChangeComplete);
         }
     }, [])
+    const component = protectedUrl(router.pathname) ?
+        <ProtectedRoute><Component {...pageProps}/> </ProtectedRoute> :
+        <Component {...pageProps}/>;
     return <>
         <title>hat - homework assignment tracker</title>
         <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
@@ -111,20 +108,21 @@ function AppContent({Component, pageProps, router}: AppProps) {
                             router.push("/")
                     }}/>
         <animated.div style={fade}>
-            <Component {...pageProps} />
+            {component}
         </animated.div>
-    </>
+    </>;
 }
 
-function MyApp({Component, pageProps, router}: AppProps) {
+function MyApp({Component, pageProps: {session, ...pageProps}, router}: AppProps) {
 
     return <>
+
         <GlobalStateProvider>
-            <UserProvider>
+            <SessionProvider session={session}>
                 <Grommet theme={grommet}>
-                    <AppContent pageProps={pageProps} Component={Component} router={router}/>
+                    <AppContent appProps={{pageProps, Component, router}} session={session}/>
                 </Grommet>
-            </UserProvider>
+            </SessionProvider>
         </GlobalStateProvider>
 
     </>

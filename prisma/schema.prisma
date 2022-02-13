@@ -8,51 +8,44 @@ generator client {
 }
 
 model Course {
-  id          String       @id
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
   name        String
+  subject     String
   description String?
   teacher     String?
-  subject     String
-  Test        Test[]       @relation("CourseTest")
-  Assignment  Assignment[] @relation("CourseAssignment")
 
-  User   User @relation(fields: [userId], references: [id])
-  userId Int
+  tests       Test[]       @relation("CourseTest")
+  assignments Assignment[] @relation("CourseAssignment")
+
+  userId String
+  User   User   @relation(fields: [userId], references: [providerId])
 }
 
 model Test {
-  id          String   @id
+  id          String   @id @default(uuid())
   name        String
   description String?
   dueDate     DateTime
 
   course   Course @relation(name: "CourseTest", fields: [courseId], references: [id])
   courseId String
-
-  User   User @relation(fields: [userId], references: [id])
-  userId Int
 }
 
 model Assignment {
-  id          String   @id
+  id          String   @id @default(uuid())
   name        String
   description String?
   dueDate     DateTime
 
   course   Course @relation(name: "CourseAssignment", fields: [courseId], references: [id])
   courseId String
-
-  User   User @relation(fields: [userId], references: [id])
-  userId Int
 }
 
 model User {
-  id         Int          @id @default(autoincrement())
-  createdAt  DateTime     @default(now())
-  email      String       @unique
+  providerId String   @id // ex: google|12841298491258102521
+  createdAt  DateTime @default(now())
+  email      String   @unique
   name       String
-
   courses    Course[]
-  Test       Test[]
-  Assignment Assignment[]
 }

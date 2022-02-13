@@ -4,6 +4,7 @@ import {animated, useSpring} from "react-spring";
 import TextButton from "../components/TextButton";
 import {useRouter} from "next/router";
 import {changeRoute} from "../util/routeUtil";
+import { useSession, signIn, signOut } from "next-auth/react"
 
 
 export default function Index() {
@@ -45,8 +46,8 @@ export default function Index() {
                 </AnimatedBox>
             </div>
             <animated.div className={"center"} style={{marginTop: "2rem", ...loginButtonAnim}}>
-                <TextButton style={{float: "left", marginRight: "2rem"}} text={"Sign Up"} onClick={() => window.location.pathname='/api/auth/login'}/>
-                <TextButton style={{float: "right", marginLeft: "2rem"}} text={"Log In"} onClick={() => window.location.pathname='/api/auth/login'}/>
+                <TextButton style={{float: "left", marginRight: "2rem"}} text={"Sign Up"} onClick={() => signIn()}/>
+                <TextButton style={{float: "right", marginLeft: "2rem"}} text={"Log In"} onClick={() => signIn()}/>
             </animated.div>
         </>
     )
