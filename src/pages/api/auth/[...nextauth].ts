@@ -1,13 +1,12 @@
-import NextAuth from "next-auth"
-import GithubProvider from "next-auth/providers/google"
-import {PrismaClient} from "@prisma/client";
+import NextAuth, {Awaitable, Session} from "next-auth"
+import GoogleProvider from "next-auth/providers/google"
+import {getPrisma} from "../_base";
 
-const prisma = new PrismaClient()
 
 export default NextAuth({
     // Configure one or more authentication providers
     providers: [
-        GithubProvider({
+        GoogleProvider({
             clientId: process.env.GOOGLE_CLIENTID as string,
             clientSecret: process.env.GOOGLE_CLIENTSECRET as string,
         }),
@@ -17,17 +16,15 @@ export default NextAuth({
         async signIn({account, profile}): Promise<boolean> {
             if (!profile.email || !profile.sub || !profile.email_verified)
                 return false;
-            if (account.provider === "google") {
-                if (!profile.email || !profile.email_verified)
-                    return false;
-            }
 
-            const user = await prisma.user.findUnique({
+            const user = await getPrisma().user.findUnique({
                 where: {providerId: account.provider + "|" + profile.sub},
                 include: {courses: true},
             })
+
             if (!user) {
-                await prisma.user.create({
+                // use the events.createUser event to create a new user later on instead
+                await getPrisma().user.create({
                     data: {
                         providerId: account.provider + "|" + profile.sub,
                         email: profile.email,
@@ -35,9 +32,20 @@ export default NextAuth({
                     },
                 });
                 console.log("created user: " + (account.provider + "|" + profile.sub))
-            }else
+            } else
                 console.log("found user: " + user.providerId)
             return true;
         },
+// @ts-ignore
+        session: async ({session, user, token}): Awaitable<Session> => {
+            if (!token || !token.email) {
+                session.providerId = null;
+                return session;
+            }
+            if (!session.providerId)
+                session.providerId = "google|" + token.sub; // assume provider is google for now
+            return session;
+        },
+
     }
 });

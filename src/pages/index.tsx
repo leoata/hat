@@ -4,13 +4,15 @@ import {animated, useSpring} from "react-spring";
 import TextButton from "../components/TextButton";
 import {useRouter} from "next/router";
 import {changeRoute} from "../util/routeUtil";
-import { useSession, signIn, signOut } from "next-auth/react"
+import {useSession, signIn, signOut} from "next-auth/react"
+import {useEffect, useState} from "react";
 
 
 export default function Index() {
     const AnimatedHeading = animated(Heading);
     const AnimatedBox = animated(Box);
     const router = useRouter();
+    const {data: session, status} = useSession();
 
     const [loginButtonAnim, loginButtonAnimApi] = useSpring(() => ({
         opacity: 0,
@@ -40,14 +42,27 @@ export default function Index() {
                     height: "100%",
                 }}>
                     <AnimatedHeading level="1"
-                                     style={{fontSize: "10rem", height: "50%",
-                                         letterSpacing: 0, pointerEvents:"none", color: "#fc7a5b"}}
+                                     style={{
+                                         fontSize: "10rem", height: "50%",
+                                         letterSpacing: 0, pointerEvents: "none", color: "#fc7a5b"
+                                     }}
                                      margin={"xsmall"}>hat</AnimatedHeading>
                 </AnimatedBox>
             </div>
             <animated.div className={"center"} style={{marginTop: "2rem", ...loginButtonAnim}}>
-                <TextButton style={{float: "left", marginRight: "2rem"}} text={"Sign Up"} onClick={() => signIn()}/>
-                <TextButton style={{float: "right", marginLeft: "2rem"}} text={"Log In"} onClick={() => signIn()}/>
+                {(!session || !session.user) ?
+                    <>
+                        <TextButton style={{float: "left", marginRight: "2rem"}} text={"Sign Up"}
+                                    onClick={() => signIn()}/>
+                        <TextButton style={{float: "right", marginLeft: "2rem"}} text={"Log In"}
+                                    onClick={() => signIn()}/>
+                    </>
+                    :
+                    <TextButton text={`${session.user.name}'s Dashboard`}
+                                onClick={() => router.push("/dashboard")}/>
+
+                }
+
             </animated.div>
         </>
     )

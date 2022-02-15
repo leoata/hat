@@ -10,10 +10,21 @@
 @font-face {
     font-family: "Natrix Sans";
     src: url("/static/fonts/natrixsans-regular.woff2") format("woff2"),
-    url("/static/fonts/natrixsans-regular.woff2") format("woff");
+    url("/static/fonts/natrixsans-regular.woff") format("woff");
     font-style: normal;
-    font-weight: 900;
+    font-weight: 400;
     font-display: swap;
 }
+
+@font-face {
+    font-family: "Natrix Sans";
+    src: url("/static/fonts/natrixsans-bold.woff2") format("woff2"),
+    url("/static/fonts/natrixsans-bold.woff") format("woff");
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+}
+
+
 
 
