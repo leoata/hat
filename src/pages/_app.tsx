@@ -8,7 +8,7 @@ import {Grommet, ThemeType} from "grommet";
 import {animated, Transition, useSpring, useTransition} from 'react-spring';
 import {useRouter} from "next/router";
 import TextButton from "../components/TextButton";
-import {SessionProvider, signIn, useSession} from "next-auth/react"
+import {SessionContextValue, SessionProvider, signIn, useSession} from "next-auth/react"
 import {useForceUpdate} from "@react-spring/shared";
 
 const grommet: ThemeType = {
@@ -74,8 +74,8 @@ const grommet: ThemeType = {
 };
 
 
-function ProtectedRoute({ children }: { children: JSX.Element }): JSX.Element {
-    const { data: session, status } = useSession()
+function ProtectedRoute({children}: { children: JSX.Element }): JSX.Element {
+    const {data: session, status} = useSession()
     const isUser = !!session?.user
     React.useEffect(() => {
         if (status === "loading") return
@@ -90,7 +90,13 @@ function ProtectedRoute({ children }: { children: JSX.Element }): JSX.Element {
     // If no user, useEffect() will redirect.
     return <div>Loading...</div> // TODO: better loading screen
 }
-function AppContent({appProps: {Component, pageProps, router}}: { appProps: AppProps}) {
+
+function AppContent({
+                        appProps: {Component, pageProps, router},
+                        session
+                    }: { appProps: AppProps, session: SessionContextValue<boolean> }) {
+    const [globalState, setGlobalState] = useGlobalState();
+
     const [fade, fadeApi] = useSpring(() => ({
         from: {opacity: 0},
         to: {opacity: 1},
@@ -108,8 +114,9 @@ function AppContent({appProps: {Component, pageProps, router}}: { appProps: AppP
         return () => {
             router.events.off('routeChangeComplete', routeChangeComplete);
         }
-    }, [])
-    return <>
+    }, []);
+
+        return <>
         <title>hat - homework assignment tracker</title>
         <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
                     onClick={() => {
@@ -120,22 +127,24 @@ function AppContent({appProps: {Component, pageProps, router}}: { appProps: AppP
 
             {    // @ts-ignore
                 Component.auth ? (
-                <ProtectedRoute>
+                    <ProtectedRoute>
+                        <Component {...pageProps} />
+                    </ProtectedRoute>
+                ) : (
                     <Component {...pageProps} />
-                </ProtectedRoute>
-            ) : (
-                <Component {...pageProps} />
-            )}
+                )}
         </animated.div>
     </>;
 }
 
 function MyApp({Component, pageProps: {session, ...pageProps}, router}: AppProps) {
+
+
     return <>
         <GlobalStateProvider>
             <SessionProvider session={session}>
                 <Grommet theme={grommet}>
-                    <AppContent appProps={{pageProps, Component, router}}/>
+                    <AppContent appProps={{pageProps, Component, router}} session={session}/>
                 </Grommet>
             </SessionProvider>
         </GlobalStateProvider>

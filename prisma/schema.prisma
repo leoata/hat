@@ -8,7 +8,7 @@ generator client {
 }
 
 model Course {
-  id          String   @id @default(uuid())
+  id          String   @id @unique @default(uuid())
   createdAt   DateTime @default(now())
   name        String
   subject     String
@@ -16,37 +16,37 @@ model Course {
   teacher     String?
   emoji       String?
 
-  tests       Test[]       @relation("CourseTest")
   assignments Assignment[] @relation("CourseAssignment")
 
   userId String
   User   User   @relation(fields: [userId], references: [providerId])
-}
 
-model Test {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  dueDate     DateTime
-
-  course   Course @relation(name: "CourseTest", fields: [courseId], references: [id])
-  courseId String
+  @@unique([id, userId], name: "course_user_unique")
 }
 
 model Assignment {
-  id          String   @id @default(uuid())
+  id          String   @id @unique @default(uuid())
   name        String
   description String?
   dueDate     DateTime
+  isTest      Boolean
+  priority    Int      @default(0)
 
   course   Course @relation(name: "CourseAssignment", fields: [courseId], references: [id])
   courseId String
+
+  user   User?   @relation(fields: [userId], references: [providerId])
+  userId String?
+
+
+  @@unique([id, userId], name: "UniqueUserAssignment")
 }
 
 model User {
-  providerId String   @id @unique // ex: google|12841298491258102521
-  createdAt  DateTime @default(now())
-  email      String   @unique
-  name       String
-  courses    Course[]
+  providerId  String       @id @unique // ex: google|12841298491258102521
+  createdAt   DateTime     @default(now())
+  email       String       @unique
+  name        String
+  courses     Course[]
+  assignments Assignment[]
 }

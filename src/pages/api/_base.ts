@@ -1,9 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import {Session} from "next-auth/core/types";
 
-let prisma: PrismaClient;
-
-export function getPrisma(): PrismaClient{
-    if (!prisma)
-        prisma = new PrismaClient();
-    return prisma;
+export function isAuthorized(session: Session | null) {
+    return (session && session.user && session.expires && !Number.isNaN(Date.parse(session.expires))
+        && Date.parse(session.expires) > Date.now());
 }
