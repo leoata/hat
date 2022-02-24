@@ -20,7 +20,8 @@ export const saveNewAssignment = (setGlobalState: any, globalState: any, setLoad
         .catch(err => console.error(err))
 }
 
-export async function saveNewCourse(courseName: string, subject: string, description: string | undefined, teacher: string | undefined) {
+export async function saveNewCourse(setGlobalState: any, globalState: any, setLoading: any, router: any,
+                                    courseName: string, subject: string, description: string | undefined, teacher: string | undefined) {
     const response = await fetch(getBaseUrl() + "/api/course",
         {
             method: "POST",
@@ -33,7 +34,10 @@ export async function saveNewCourse(courseName: string, subject: string, descrip
                 description: description,
                 teacher: teacher
             })
-        })
+        }).then(async (response) => {
+        await getCourseAndUserData(setGlobalState, globalState, setLoading, router)
+        return response;
+    })
     return response.json();
 }
 
@@ -61,10 +65,19 @@ export async function getCourseAndUserData(setGlobalState: any, globalState: any
                     });
                 return;
             }
+            for (let i = 0; i < courses.length; ++i) {
+                courses[i] = {
+                    ...courses[i],
+                    assignments: courses[i].assignments.filter((assignment: any) => !assignment.completed)
+                }
+            }
             setGlobalState({
                 ...globalState,
                 userData: {
-                    data: {courses: courses.filter((course: any) => !course.completed && !course), user: courses[0].user},
+                    data: {
+                        courses: courses,
+                        user: courses[0].user
+                    },
                     lastUpdated: Date.now()
                 }
             });

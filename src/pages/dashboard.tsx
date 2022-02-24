@@ -123,7 +123,7 @@ function Dashboard() {
                     plain
                     onClick={() => getCourseAndUserData(setGlobalState, globalState, setLoading, router)}
                     hoverIndicator icon={<Refresh/>}/>
-            <Box className={"center"} pad={"medium"} width={"90%"} height={"100%"}
+            <Box className={"center"} pad={"medium"} width={"80%"} height={"100%"}
                  style={{overflow: "scroll", maxHeight: "calc(100% - 40px)", top: "calc(50% - 20px)"}}>
                 {infoModalShow ?
                     <InfoModal show={infoModalShow} setShow={setInfoModalShow}/> : null

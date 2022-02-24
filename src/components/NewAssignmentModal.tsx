@@ -92,6 +92,8 @@ const CourseSelectionSection = ({show, setShow, courses, setSubsection}: NewAssi
     const [description, setDescription] = React.useState("");
     const [emoji, setEmoji] = React.useState("");
     const [inputValid, setInputValid] = React.useState<CoursetInputValidationResult>(CoursetInputValidationResult.VALID);
+    const [globalState, setGlobalState] = useGlobalState();
+    const router = useRouter();
 
     useEffect(() => {
         setInputValid(computeInputValid());
@@ -200,7 +202,8 @@ const CourseSelectionSection = ({show, setShow, courses, setSubsection}: NewAssi
                                 .replace(/^\w/, c => c.toUpperCase()));
                             return;
                         }
-                        await saveNewCourse(courseName, subject, description, teacher);
+                        await saveNewCourse(setGlobalState, globalState, () => null, router,
+                            courseName, subject, description, teacher);
                         setShow(false);
 
                     }} plain>
@@ -262,8 +265,10 @@ const AssignmentSelectionSection = ({show, setShow, courses, setSubsection}: New
                     {name: "nameInput", start: [1, 1], end: [1, 1]},
                     {name: "dueDateLabel", start: [0, 2], end: [0, 2]},
                     {name: "dueDateInput", start: [1, 2], end: [1, 2]},
-                    {name: "isTestLabel", start: [0, 3], end: [0, 3]},
-                    {name: "isTestInput", start: [1, 3], end: [1, 3]},
+                    {name: "timeLabel", start: [0, 3], end: [0, 3]},
+                    {name: "timeInput", start: [1, 3], end: [1, 3]},
+                    {name: "isTestLabel", start: [0, 4], end: [0, 4]},
+                    {name: "isTestInput", start: [1, 4], end: [1, 4]},
                 ]}>
                 <Box gridArea={"courseLabel"}>
                     <h4 style={{
@@ -317,6 +322,16 @@ const AssignmentSelectionSection = ({show, setShow, courses, setSubsection}: New
                         }}
                         defaultValue={new Date(Date.now() + (1000 * 60 * 60 * 24 * 3)).toISOString()}
                     />
+                </Box>
+                <Box gridArea={"timeLabel"}>
+                    <h4 style={{
+                        lineHeight: "16px",
+                        marginTop: "16px",
+                        marginBottom: "16px"
+                    }}>Due Time:</h4>
+                </Box>
+                <Box gridArea={"timeInput"}>
+
                 </Box>
                 <Box gridArea={"isTestLabel"}>
                     <h4 style={{
