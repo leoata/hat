@@ -9,6 +9,7 @@ generator client {
 
 model Course {
   id          String   @id @unique @default(uuid())
+  lastUpdated DateTime @default(now()) @updatedAt
   createdAt   DateTime @default(now())
   name        String
   subject     String
@@ -26,10 +27,12 @@ model Course {
 
 model Assignment {
   id          String   @id @unique @default(uuid())
+  lastUpdated DateTime @default(now()) @updatedAt
   name        String
   description String?
   dueDate     DateTime
   isTest      Boolean
+  completed   Boolean  @default(false)
   priority    Int      @default(0)
 
   course   Course @relation(name: "CourseAssignment", fields: [courseId], references: [id])
@@ -44,6 +47,7 @@ model Assignment {
 
 model User {
   providerId  String       @id @unique // ex: google|12841298491258102521
+  lastUpdated DateTime     @default(now()) @updatedAt
   createdAt   DateTime     @default(now())
   email       String       @unique
   name        String

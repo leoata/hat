@@ -1,6 +1,6 @@
 import NextAuth, {Awaitable, Session} from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
-import {getPrisma} from "../_base";
+import prisma from "../../../../lib/prisma";
 
 
 export default NextAuth({
@@ -17,14 +17,14 @@ export default NextAuth({
             if (!profile.email || !profile.sub || !profile.email_verified)
                 return false;
 
-            const user = await getPrisma().user.findUnique({
+            const user = await prisma.user.findUnique({
                 where: {providerId: account.provider + "|" + profile.sub},
                 include: {courses: true},
             })
 
             if (!user) {
                 // use the events.createUser event to create a new user later on instead
-                await getPrisma().user.create({
+                await prisma.user.create({
                     data: {
                         providerId: account.provider + "|" + profile.sub,
                         email: profile.email,

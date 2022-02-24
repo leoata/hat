@@ -13,7 +13,13 @@ import {useForceUpdate} from "@react-spring/shared";
 
 const grommet: ThemeType = {
     global: {
+        focus: {
+            border: {
+                color: '#C08497',
+            },
+        },
         colors: {
+            brand: "#C08497",
             navyBlue: "#0d3b66",
             beige: "#faf0ca",
             yellow: "#f4d35e",
@@ -24,6 +30,7 @@ const grommet: ThemeType = {
             lightGreen: "#00ED64",
             primary: "#fc7a5b",
             secondary: "#475b5a",
+            border: "#C08497"
         },
         font: {
             family: "Natrix Sans",
@@ -116,7 +123,7 @@ function AppContent({
         }
     }, []);
 
-        return <>
+    return <>
         <title>hat - homework assignment tracker</title>
         <TextButton style={{position: "absolute", margin: "20px"}} text={"h"}
                     onClick={() => {

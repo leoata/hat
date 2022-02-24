@@ -1,17 +1,26 @@
 import {getSession, useSession} from "next-auth/react";
 import React, {useEffect, useState} from "react";
-import {Box, Button, Card, CardBody, CardFooter, CardHeader, Heading, Select, Text, Grid} from "grommet";
+import {Box, Button, Card, CardBody, CardFooter, CardHeader, Heading, Select, Text, Grid, Clock} from "grommet";
 import {getBaseUrl} from "../util/envUtil";
 import {useRouter} from "next/router";
 import {animated, useSpring} from "react-spring";
-import {Add} from "grommet-icons";
+import {Add, Refresh} from "grommet-icons";
 import {useGlobalState} from "../store";
 import {Session} from "next-auth/core/types";
 import {User, Assignment, Course} from "@prisma/client";
 import AssignmentCard from "../components/AssignmentCard";
-
-//possibly add ability to add metadata to tests and assignments so have all data in one spot. is it open note, on
-// canvas or paper, priority, etc.
+import prisma from "../../lib/prisma";
+import NewAssignmentModal from "../components/NewAssignmentModal";
+import DayAssignments from "../components/DayAssignments";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import InfoModal from "../components/InfoModal";
+import {
+    deleteAssignment,
+    getCourseAndUserData,
+    saveAssignmentPriorities,
+    saveNewAssignment,
+    setComplete
+} from "../../lib/apiclient";
 
 function Dashboard() {
     const router = useRouter();
@@ -19,114 +28,152 @@ function Dashboard() {
     const [globalState, setGlobalState] = useGlobalState();
     const [isLoading, setLoading] = useState(
         !globalState.userData.data || Date.now() - globalState.userData.lastUpdated > 1000 * 60 * 60 * 24);
-    const [addClickAnim, setAddClickAnim] = useSpring(() => ({
-        fill: "#000000",
-        config: {duration: 200}
-    }));
+    const [lastPriorityUpdate, setLastPriorityUpdate] = useState(0);
+    const [newAssignmentModalShow, setNewAssignmentModalShow] = React.useState(false);
+    const [infoModalShow, setInfoModalShow] = React.useState<any>(undefined);
+    const [confirmDeleteModalShow, setConfirmDeleteModalShow] = React.useState<string | undefined>(undefined);
+    // id of assignment to delete, undefined otherwise
 
     if (!session || !session.user || !session.user.email) {
         router.replace("/");
         return null;
     }
 
+    const [priorities, setPriorities] = useState<string[][]>([[], [], []]); // idx=priority, val=[asn ids]
+    const postPriority = async (id: string, p: number) => {
+        for (let i = 0; i < priorities.length; ++i)
+            priorities[i] = priorities[i].filter(x => x !== id);
+        priorities[p].push(id);
+        if (lastPriorityUpdate - Date.now() > 3000) {
+            setLastPriorityUpdate(Date.now());
+            await saveAssignmentPriorities(priorities, setPriorities);
+        }
+    }
+    if (window) {
+        window.addEventListener("unload", async () => await saveAssignmentPriorities(priorities, setPriorities))
+    }
+
     useEffect(() => {
         // dont bother with super stale data
         if (!globalState.userData.data || Date.now() - globalState.userData.lastUpdated > 1000 * 60 * 60 * 24) // 1 day
             setLoading(true)
-        const courses = fetch(getBaseUrl() + "/api/course")
-            .then((res) => res.json())
-            .then((courses) => {
-                if (!courses || courses.length == 0) {
-                    fetch(getBaseUrl() + "/api/user")
-                        .then((res) => res.json())
-                        .then((data) => {
-                            setGlobalState({
-                                ...globalState,
-                                userData: {
-                                    data: {user: data, courses: []},
-                                    lastUpdated: Date.now()
-                                }
-                            });
-                        })
-                        .catch((err: any) => {
-                            console.log(err)
-                            router.replace("/");
-                            return null;
-                        });
-                    return;
-                }
-                setGlobalState({
-                    ...globalState,
-                    userData: {
-                        data: {courses: courses, user: courses[0].user},
-                        lastUpdated: Date.now()
-                    }
-                });
-            })
-            .catch((err: any) => {
-                console.log(err)
-                router.replace("/");
-                return null;
-            });
-        setLoading(false);
+
+        getCourseAndUserData(setGlobalState, globalState, setLoading, router);
+
+        const poller = setInterval(async () => { // TODO: make this work
+            await saveAssignmentPriorities(priorities, setPriorities, setLastPriorityUpdate);
+        }, 3000);
+        return () => {
+            clearInterval(poller)
+        }
     }, []);
 
 
     if (isLoading) return <Heading className={"center"} level={"1"}>Loading...</Heading>
-    if (globalState.userData.lastUpdated === 0) return <p>No profile data</p>
+    if (globalState.userData.lastUpdated === 0) return <Heading className={"center"} level={"1"}>No Data found.
+        Try logging in again.</Heading>
+    let dayOrder: number[] = [];
+    if (globalState.userData.data) {
+        let allAssignments = globalState.userData.data.courses.map((course: any) => course.assignments).flat();
+        let allDays: string[] = allAssignments.map(s => new Date(s.dueDate)).sort((a, b) => a.getTime() - b.getTime())
+            .map(d => d.toISOString().slice(0, 10)).filter((item, pos, self) => self.indexOf(item) == pos);
+        if (allDays.includes(new Date().toISOString().slice(0, 10)))  // today
+            dayOrder.push(floorDate(Date.now()).getTime());
 
-    const genRepeatArray = (key: string, cnt: number) => Array.from(Array(cnt).keys()).map(x => key);
-
-    const AnimatedAdd = animated(Add);
-
-    let gridCnt = -1;
-    let cardCount = globalState.userData.data ?
-        globalState.userData.data.courses.map((course: any) => course.assignments).flat().length : 0;
-    const numCols = cardCount > 3 ? 3 : cardCount;
-    const numRows = Math.ceil(cardCount / 3);
-    const gridRows = genRepeatArray("auto", numRows);
-    const gridCols = genRepeatArray("32%", numCols);
-    const gridAreas = gridRows.map((_, row) => {
-        return gridCols.map((__, col) => {
-            return {name: `${col},${row}`, start: [col, row], end: [col, row]};
-        })
-    }).flat();
-    console.log(gridAreas);
+        // overdue
+        dayOrder.push(...allDays.filter(d => new Date(d).getTime() < new Date().getTime()).map(d => new Date(d).getTime()));
+        // upcoming
+        dayOrder.push(...allDays.filter(d => new Date(d).getTime() > new Date().getTime()).map(s => new Date(s).getTime()));
+        dayOrder = dayOrder.filter(s => dayOrder.indexOf(s) == dayOrder.lastIndexOf(s));
+    }
 
     return (
-        <Box className={"center"} pad={"medium"} width={"large"} height={"auto"} border={{}}
-        >
-            <Button style={{width: "32px", height: "32px", position: "absolute", right: "24px"}} color={"white"}
+        <>
+            <Clock style={{
+                width: "10rem",
+                height: "32px",
+                position: "fixed",
+                left: "50%",
+                marginLeft: "-5rem",
+                marginTop: "1rem",
+                textAlign: "center",
+                zIndex: 999,
+            }} type="digital"/>
+            <Button style={{
+                width: "32px",
+                height: "32px",
+                position: "fixed",
+                right: "24px",
+                marginTop: "24px",
+                textAlign: "center",
+                zIndex: 999,
+            }} color={"white"}
                     plain
-                    onClick={() => setAddClickAnim({fill: "#fc7a5b"})}
-                    hoverIndicator icon={<AnimatedAdd style={addClickAnim}/>}/>
-            <Heading level={"1"} style={{textAlign: "left", fontWeight: "800"}} color={"#fc7a5b"}>Today</Heading>
-            {cardCount > 0 ?
-                <Grid rows={gridRows}
-                      columns={gridCols}
-                      areas={gridAreas}
-                      gap={"small"}
-                >
-                    {
+                    onClick={() => setNewAssignmentModalShow(true)}
+                    hoverIndicator icon={<Add/>}/>
+            <Button style={{
+                width: "32px",
+                height: "32px",
+                position: "fixed",
+                right: "56px",
+                marginTop: "24px",
+                textAlign: "center",
+                zIndex: 999,
+            }} color={"white"}
+                    plain
+                    onClick={() => getCourseAndUserData(setGlobalState, globalState, setLoading, router)}
+                    hoverIndicator icon={<Refresh/>}/>
+            <Box className={"center"} pad={"medium"} width={"90%"} height={"100%"}
+                 style={{overflow: "scroll", maxHeight: "calc(100% - 40px)", top: "calc(50% - 20px)"}}>
+                {infoModalShow ?
+                    <InfoModal show={infoModalShow} setShow={setInfoModalShow}/> : null
+                }
+                {newAssignmentModalShow ?
+                    <NewAssignmentModal courses={globalState.userData.data ? globalState.userData.data.courses : []}
+                                        show={newAssignmentModalShow} setShow={setNewAssignmentModalShow}/> : <></>}
+                {confirmDeleteModalShow ?
+                    <ConfirmDeleteModal show={confirmDeleteModalShow} setShow={setConfirmDeleteModalShow}
+                                        callback={async (id: string | undefined) =>
+                                            await deleteAssignment(id as string, setGlobalState, globalState, router)}
+                    /> : <></>}
 
-                        globalState.userData.data ?
-                            globalState.userData.data.courses.map((course: any) => {
-                                gridCnt++;
-                                return course ?
-                                    course.assignments.map((asn: any) => {
-                                        return <AssignmentCard
-                                            gridArea={`${gridCnt % 3},${Math.floor(gridCnt / 3)}`}
-                                            course={course}
-                                            assignment={asn}/>
-                                    }) : <p>No courses</p>
-                            }) : <p>No Data</p>
-                    }
-                </Grid>
-                : <p>No assignments</p>
-            }
-        </Box>
+                <DayAssignments key={floorDate(Date.now()).getTime()} postPriority={postPriority}
+                                day={[floorDate(Date.now()).getTime()]}
+                                setDeleteModalShow={setConfirmDeleteModalShow}
+                                setInfoModalShow={setInfoModalShow}
+                                setComplete={(id: string) => setComplete(id, setGlobalState, globalState, setLoading, router)}/>
+                {
+                    dayOrder.filter(d => new Date(d).getTime() < new Date().getTime())
+                        .length > 0 ?
+                        <DayAssignments key={"overdue"} postPriority={postPriority} overdue
+                                        day={[...dayOrder.filter(d => new Date(d).getTime() < new Date().getTime()).map(d => new Date(d).getTime())]}
+                                        setDeleteModalShow={setConfirmDeleteModalShow}
+                                        setInfoModalShow={setInfoModalShow}
+                                        setComplete={(id: string) => setComplete(id, setGlobalState, globalState, setLoading, router)}/> : <></>
+                }
+                {
+                    dayOrder.filter(d => new Date(d).getTime() > new Date().getTime()).map(d => new Date(d).getTime())
+                        .filter((day: number) =>
+                            globalState.userData.data ?
+                            globalState.userData.data.courses.map((course: any) => course.assignments).flat()
+                                .filter((asn: any) => !asn.completed)
+                                .filter(asn => new Date(day).toISOString().slice(0, 10) ===
+                                    new Date(asn.dueDate).toISOString().slice(0, 10)).length : 0 > 0)
+                        .map((s: number) => {
+                        return <DayAssignments key={s} postPriority={postPriority} day={[s]}
+                                               setDeleteModalShow={setConfirmDeleteModalShow}
+                                               setInfoModalShow={setInfoModalShow}
+                                               setComplete={(id: string) => setComplete(id, setGlobalState, globalState, setLoading, router)}
+                        />
+                    })
+                }
+            </Box>
+        </>
     );
 }
 
+export const floorDate = (date: number) => {
+    return new Date(new Date(date).toISOString().slice(0, 10));
+};
 Dashboard.auth = true;
 export default Dashboard;
