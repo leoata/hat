@@ -63,7 +63,6 @@ export async function getCourseAndUserData(setGlobalState: any, globalState: any
                         router.replace("/");
                         return null;
                     });
-                return;
             }
             for (let i = 0; i < courses.length; ++i) {
                 courses[i] = {
